@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+.DS_Store
+.env
+.venv/
+venv/
+*.sqlite
+*.sqlite-journal
+*.pdf
+*.bak
+reports/
+docs/
+zotero-imports/
+_ProcessLog_*.md
+_DeepReadLog_*.md
+_DeepReadReport_*.json
+_EvidenceMigrationLog_*.md
