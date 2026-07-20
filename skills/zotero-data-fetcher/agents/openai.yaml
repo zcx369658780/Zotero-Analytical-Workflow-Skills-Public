@@ -1,0 +1,4 @@
+interface:
+  display_name: "Zotero Data Fetcher"
+  short_description: "Fetch Zotero metadata, annotations, and cached text"
+  default_prompt: "Use $zotero-data-fetcher to fetch metadata, annotations, and cached full text for this Zotero item."

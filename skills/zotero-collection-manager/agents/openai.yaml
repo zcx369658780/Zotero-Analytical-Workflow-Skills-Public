@@ -1,0 +1,4 @@
+interface:
+  display_name: "Zotero Collection Manager"
+  short_description: "Resume batch processing for a Zotero collection"
+  default_prompt: "Use $zotero-collection-manager to resume processing the unfinished items in this Zotero collection."

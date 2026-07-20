@@ -1,0 +1,4 @@
+interface:
+  display_name: "Zotero Analytical Writer"
+  short_description: "Restructure source material into Obsidian notes"
+  default_prompt: "Use $zotero-analytical-writer to restructure this source material into the current Obsidian note template."
