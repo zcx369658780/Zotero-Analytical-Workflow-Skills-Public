@@ -1,0 +1,146 @@
+{
+  "schema_version": "1.0.0",
+  "case_id": "education_claim_audit_2026",
+  "title": "Northbridge Learning Studio claim audit",
+  "educational_scenario": "A fully fictional teaching bundle about low-stakes study workshops. Learners compare bounded source summaries with claims of different strength.",
+  "source_provenance": {
+    "synthetic_independently_written": true,
+    "reuse_status": "project-authored-synthetic",
+    "authoring_method": "Human-authored from scratch for the ScholarTrace Build Week demonstration.",
+    "creation_date": "2026-07-20",
+    "license_reuse_note": "Independently written downstream demonstration content for this repository.",
+    "prohibited_content_review": {
+      "copied_source_passages": false,
+      "private_zotero_content": false,
+      "copyrighted_pdf_content": false,
+      "purchased_data": false,
+      "unpublished_research": false,
+      "personal_data": false
+    }
+  },
+  "sources": [
+    {
+      "source_id": "source_supported",
+      "text": "In the fictional Northbridge Learning Studio, 24 volunteer first-year learners attended a six-week planning workshop. Attendance records show that 20 learners completed at least five sessions.",
+      "locator": "synthetic://education_claim_audit_2026/source_supported",
+      "limitations": [
+        "24 volunteer first-year learners",
+        "six-week period",
+        "attendance outcome only"
+      ]
+    },
+    {
+      "source_id": "source_partial",
+      "text": "All 18 learners in the fictional reflection group submitted at least four weekly reflection cards. The exercise did not measure confidence.",
+      "locator": "synthetic://education_claim_audit_2026/source_partial",
+      "limitations": [
+        "18 learners",
+        "reflection-card completion measured",
+        "confidence not measured"
+      ]
+    },
+    {
+      "source_id": "source_unsupported",
+      "text": "The fictional comparison summary found no difference in puzzle accuracy between learners who used colored reminder cards and learners who used plain reminder cards.",
+      "locator": "synthetic://education_claim_audit_2026/source_unsupported",
+      "limitations": [
+        "puzzle accuracy outcome",
+        "no measured difference"
+      ]
+    },
+    {
+      "source_id": "source_correlation",
+      "text": "Among 40 fictional learners who chose their own study routines, checklist use was associated with higher practice-quiz scores. The groups were self-selected, and the summary states that no causal conclusion can be drawn.",
+      "locator": "synthetic://education_claim_audit_2026/source_correlation",
+      "limitations": [
+        "40 self-selected learners",
+        "observational association",
+        "no causal inference"
+      ]
+    },
+    {
+      "source_id": "source_scope",
+      "text": "A fictional four-week pilot involved 12 volunteer learners in one introductory design class. Nine reported that a two-minute planning prompt was easy to use. No later follow-up was conducted.",
+      "locator": "synthetic://education_claim_audit_2026/source_scope",
+      "limitations": [
+        "12 volunteers",
+        "one introductory design class",
+        "four-week pilot",
+        "ease-of-use self-report",
+        "no follow-up"
+      ]
+    },
+    {
+      "source_id": "source_missing_context",
+      "text": "The fictional activity log mentions a follow-up session but supplies no attendance count, outcome measure, comparison, or duration.",
+      "locator": "synthetic://education_claim_audit_2026/source_missing_context",
+      "limitations": [
+        "outcome context missing",
+        "duration missing",
+        "comparison missing"
+      ]
+    },
+    {
+      "source_id": "source_conflict_a",
+      "text": "One fictional session note says seven of twelve learners preferred the paper planning card.",
+      "locator": "synthetic://education_claim_audit_2026/source_conflict_a",
+      "limitations": [
+        "single session note",
+        "preference outcome"
+      ]
+    },
+    {
+      "source_id": "source_conflict_b",
+      "text": "A second fictional session note for the same group says five of twelve learners preferred the paper planning card. The records do not explain the discrepancy.",
+      "locator": "synthetic://education_claim_audit_2026/source_conflict_b",
+      "limitations": [
+        "conflicts with another session note",
+        "discrepancy unresolved"
+      ]
+    }
+  ],
+  "claims": [
+    {
+      "claim_id": "claim_supported",
+      "fixture_id": "fixture_supported",
+      "text": "In the six-week fictional workshop, 20 of 24 volunteer first-year learners completed at least five sessions.",
+      "claim_type": "descriptive"
+    },
+    {
+      "claim_id": "claim_partially_supported",
+      "fixture_id": "fixture_partially_supported",
+      "text": "The 18 fictional learners submitted reflection cards and became more confident.",
+      "claim_type": "compound"
+    },
+    {
+      "claim_id": "claim_unsupported",
+      "fixture_id": "fixture_unsupported_conclusion",
+      "text": "Colored reminder cards improved fictional learners' puzzle accuracy.",
+      "claim_type": "outcome"
+    },
+    {
+      "claim_id": "claim_causation",
+      "fixture_id": "fixture_correlation_as_causation",
+      "text": "Using a checklist caused the fictional learners to earn higher practice-quiz scores.",
+      "claim_type": "causal"
+    },
+    {
+      "claim_id": "claim_omitted_limits",
+      "fixture_id": "fixture_omitted_limitations",
+      "text": "Two-minute planning prompts permanently help all university learners.",
+      "claim_type": "generalization"
+    },
+    {
+      "claim_id": "claim_missing_context",
+      "fixture_id": "fixture_unverifiable_missing_context",
+      "text": "The fictional follow-up session sustained the earlier workshop outcome.",
+      "claim_type": "outcome"
+    },
+    {
+      "claim_id": "claim_conflict",
+      "fixture_id": "fixture_conflicting_evidence",
+      "text": "A majority of the fictional group preferred the paper planning card.",
+      "claim_type": "descriptive"
+    }
+  ]
+}

@@ -1,0 +1,242 @@
+{
+  "schema_version": "1.0.0",
+  "case_id": "education_claim_audit_2026",
+  "proposals": [
+    {
+      "claim_id": "claim_supported",
+      "cited_source_ids": [
+        "source_supported"
+      ],
+      "evidence_status": "full_support",
+      "material_components": [
+        {
+          "component_id": "supported_attendance",
+          "text": "Duration, sample, and attendance count match the source.",
+          "support_status": "supported"
+        }
+      ],
+      "missing_or_altered_qualifiers": [],
+      "fact_flags": {
+        "causal_overreach": false,
+        "scope_generalization": false,
+        "certainty_magnitude_overreach": false,
+        "contradiction_or_no_support": false,
+        "separable_partial_support": false,
+        "ambiguity_or_conflict": false,
+        "missing_required_context": false,
+        "all_material_components_supported": true,
+        "all_material_qualifiers_supported": true
+      },
+      "rationale_candidate": "The claim preserves the fictional sample, period, and attendance result.",
+      "unresolved_questions": []
+    },
+    {
+      "claim_id": "claim_partially_supported",
+      "cited_source_ids": [
+        "source_partial"
+      ],
+      "evidence_status": "mixed_support",
+      "material_components": [
+        {
+          "component_id": "partial_reflections",
+          "text": "Reflection-card submission is supported.",
+          "support_status": "supported"
+        },
+        {
+          "component_id": "partial_confidence",
+          "text": "Confidence improvement was not measured.",
+          "support_status": "unsupported"
+        }
+      ],
+      "missing_or_altered_qualifiers": [
+        "confidence outcome was not measured"
+      ],
+      "fact_flags": {
+        "causal_overreach": false,
+        "scope_generalization": false,
+        "certainty_magnitude_overreach": false,
+        "contradiction_or_no_support": false,
+        "separable_partial_support": true,
+        "ambiguity_or_conflict": false,
+        "missing_required_context": false,
+        "all_material_components_supported": false,
+        "all_material_qualifiers_supported": false
+      },
+      "rationale_candidate": "Submission is supported, while the separable confidence component is unsupported.",
+      "unresolved_questions": [
+        "Would a later exercise measure confidence?"
+      ]
+    },
+    {
+      "claim_id": "claim_unsupported",
+      "cited_source_ids": [
+        "source_unsupported"
+      ],
+      "evidence_status": "no_support",
+      "material_components": [
+        {
+          "component_id": "unsupported_accuracy",
+          "text": "The source reports no measured accuracy difference.",
+          "support_status": "unsupported"
+        }
+      ],
+      "missing_or_altered_qualifiers": [],
+      "fact_flags": {
+        "causal_overreach": false,
+        "scope_generalization": false,
+        "certainty_magnitude_overreach": false,
+        "contradiction_or_no_support": true,
+        "separable_partial_support": false,
+        "ambiguity_or_conflict": false,
+        "missing_required_context": false,
+        "all_material_components_supported": false,
+        "all_material_qualifiers_supported": true
+      },
+      "rationale_candidate": "The asserted improvement conflicts with the reported no-difference result.",
+      "unresolved_questions": []
+    },
+    {
+      "claim_id": "claim_causation",
+      "cited_source_ids": [
+        "source_correlation"
+      ],
+      "evidence_status": "mixed_support",
+      "material_components": [
+        {
+          "component_id": "causation_association",
+          "text": "An association is reported, but causal attribution is not supported.",
+          "support_status": "supported"
+        }
+      ],
+      "missing_or_altered_qualifiers": [
+        "observational association",
+        "self-selected groups",
+        "no causal inference"
+      ],
+      "fact_flags": {
+        "causal_overreach": true,
+        "scope_generalization": false,
+        "certainty_magnitude_overreach": false,
+        "contradiction_or_no_support": false,
+        "separable_partial_support": true,
+        "ambiguity_or_conflict": false,
+        "missing_required_context": false,
+        "all_material_components_supported": false,
+        "all_material_qualifiers_supported": false
+      },
+      "rationale_candidate": "The claim converts a self-selected association into causation.",
+      "unresolved_questions": [],
+      "suggested_final_verdict": "supported"
+    },
+    {
+      "claim_id": "claim_omitted_limits",
+      "cited_source_ids": [
+        "source_scope"
+      ],
+      "evidence_status": "mixed_support",
+      "material_components": [
+        {
+          "component_id": "scope_ease",
+          "text": "A bounded ease-of-use report exists.",
+          "support_status": "supported"
+        },
+        {
+          "component_id": "scope_permanent_all",
+          "text": "Permanent benefit for all learners is not supported.",
+          "support_status": "unsupported"
+        }
+      ],
+      "missing_or_altered_qualifiers": [
+        "12 volunteers",
+        "one class",
+        "four weeks",
+        "ease-of-use outcome",
+        "no follow-up"
+      ],
+      "fact_flags": {
+        "causal_overreach": false,
+        "scope_generalization": true,
+        "certainty_magnitude_overreach": true,
+        "contradiction_or_no_support": false,
+        "separable_partial_support": true,
+        "ambiguity_or_conflict": false,
+        "missing_required_context": false,
+        "all_material_components_supported": false,
+        "all_material_qualifiers_supported": false
+      },
+      "rationale_candidate": "The claim broadens a short, local ease-of-use report into a permanent universal benefit.",
+      "unresolved_questions": [
+        "Would the result persist after the four-week pilot?"
+      ]
+    },
+    {
+      "claim_id": "claim_missing_context",
+      "cited_source_ids": [
+        "source_missing_context"
+      ],
+      "evidence_status": "insufficient_context",
+      "material_components": [
+        {
+          "component_id": "missing_follow_up",
+          "text": "The supplied source lacks the outcome context needed for assessment.",
+          "support_status": "unknown"
+        }
+      ],
+      "missing_or_altered_qualifiers": [
+        "attendance count",
+        "outcome measure",
+        "comparison",
+        "duration"
+      ],
+      "fact_flags": {
+        "causal_overreach": false,
+        "scope_generalization": false,
+        "certainty_magnitude_overreach": false,
+        "contradiction_or_no_support": false,
+        "separable_partial_support": false,
+        "ambiguity_or_conflict": false,
+        "missing_required_context": true,
+        "all_material_components_supported": false,
+        "all_material_qualifiers_supported": false
+      },
+      "rationale_candidate": "The supplied record does not contain enough context to assess sustained outcomes.",
+      "unresolved_questions": [
+        "What outcome was measured?",
+        "How long after the workshop was the follow-up?"
+      ]
+    },
+    {
+      "claim_id": "claim_conflict",
+      "cited_source_ids": [
+        "source_conflict_a",
+        "source_conflict_b"
+      ],
+      "evidence_status": "conflicting",
+      "material_components": [
+        {
+          "component_id": "conflict_majority",
+          "text": "The two supplied counts disagree about whether a majority preferred the card.",
+          "support_status": "unknown"
+        }
+      ],
+      "missing_or_altered_qualifiers": [
+        "record discrepancy unresolved"
+      ],
+      "fact_flags": {
+        "causal_overreach": false,
+        "scope_generalization": false,
+        "certainty_magnitude_overreach": false,
+        "contradiction_or_no_support": false,
+        "separable_partial_support": false,
+        "ambiguity_or_conflict": true,
+        "missing_required_context": false,
+        "all_material_components_supported": false,
+        "all_material_qualifiers_supported": false
+      },
+      "rationale_candidate": "Conflicting supplied counts prevent a defensible majority finding.",
+      "unresolved_questions": [
+        "Which session note is accurate?"
+      ]
+    }
+  ]
+}

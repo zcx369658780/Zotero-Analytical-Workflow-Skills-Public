@@ -1,0 +1,28 @@
+{
+  "fixture_set_id": "scholartrace_education_claim_audit_v1",
+  "version": "1.0.0",
+  "creation_date": "2026-07-20",
+  "synthetic_independently_written": true,
+  "authoring_method": "Human-authored from scratch in the primary Codex development session using only the frozen ScholarTrace scope.",
+  "no_copied_source_passage": true,
+  "prohibited_content_checklist": {
+    "external_source_content": false,
+    "private_zotero_content": false,
+    "copyrighted_paper_or_pdf_text": false,
+    "purchased_data": false,
+    "xiaohongshu_material": false,
+    "unpublished_research": false,
+    "personal_or_sensitive_data": false
+  },
+  "files": {
+    "education_claim_audit_case.json": {
+      "sha256": "653FEA5B5B507B8258C620B9AFFE0D125AA9CC3D1884F69D97B7A119EDD55B1C"
+    },
+    "education_claim_audit_proposal.json": {
+      "sha256": "EEB53DE25B204820AD67B4D61F4E07BF4219A08A10E663222DF22D41376CE0B0"
+    },
+    "education_claim_audit_gold.json": {
+      "sha256": "12569B669B6FC2D5597EE0269DCDDD1BF720152B950E3D8034BFD399F15142B0"
+    }
+  }
+}

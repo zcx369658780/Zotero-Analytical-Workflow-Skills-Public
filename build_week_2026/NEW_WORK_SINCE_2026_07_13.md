@@ -61,3 +61,29 @@ later task.
 The next authorized work should begin with synthetic fixture content, explicit
 schemas, and a deterministic fail-closed pipeline. Model integration,
 submission assets, and deployment require later gates.
+
+## First ScholarTrace implementation gate
+
+The task-bearing commit
+`8d9f6fb58818abb7fa52a88c14b772f96f0d1e56` authorized the first
+independently developed ScholarTrace implementation slice. This competition-
+period work adds:
+
+- a standard-library Python package at `scholartrace/`;
+- three normative JSON Schema Draft 2020-12 contracts;
+- seven independently written synthetic education fixtures covering the five
+  frozen verdicts;
+- frozen fixture provenance and SHA256 verification;
+- a deterministic policy with fail-closed priority;
+- a read-only-by-default, no-overwrite CLI;
+- deterministic JSON and Markdown outputs;
+- focused `unittest` coverage;
+- a no-secret GitHub Actions workflow; and
+- bounded implementation usage and verification documentation.
+
+This implementation does not modify the protected upstream-derived
+counterparts or the permission and notice files. It does not invoke a model,
+access external source content, or integrate with real Zotero or Obsidian data.
+
+GPT-5.6 integration, human review, public demonstration, release, deployment,
+and submission work remain outside this gate.

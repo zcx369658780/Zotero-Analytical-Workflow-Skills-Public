@@ -1,0 +1,156 @@
+{
+  "schema_version": "1.0.0",
+  "case_id": "education_claim_audit_2026",
+  "fixture_set_id": "scholartrace_education_claim_audit_v1",
+  "review_status": "unreviewed",
+  "human_verified": false,
+  "expectations": [
+    {
+      "fixture_id": "fixture_supported",
+      "claim_id": "claim_supported",
+      "expected_verdict": "supported",
+      "required_evidence_ids": [
+        "source_supported"
+      ],
+      "required_rule_flags": [
+        "all_material_components_supported",
+        "all_material_qualifiers_supported"
+      ],
+      "acceptable_rationale_elements": [
+        "sample",
+        "six-week period",
+        "attendance"
+      ],
+      "prohibited_inventions_or_upgrades": [
+        "causal effect",
+        "generalization beyond volunteers",
+        "E3 promotion"
+      ],
+      "human_review_required": true
+    },
+    {
+      "fixture_id": "fixture_partially_supported",
+      "claim_id": "claim_partially_supported",
+      "expected_verdict": "partially_supported",
+      "required_evidence_ids": [
+        "source_partial"
+      ],
+      "required_rule_flags": [
+        "separable_partial_support"
+      ],
+      "acceptable_rationale_elements": [
+        "reflection submission supported",
+        "confidence not measured"
+      ],
+      "prohibited_inventions_or_upgrades": [
+        "confidence improvement",
+        "full support"
+      ],
+      "human_review_required": true
+    },
+    {
+      "fixture_id": "fixture_unsupported_conclusion",
+      "claim_id": "claim_unsupported",
+      "expected_verdict": "unsupported",
+      "required_evidence_ids": [
+        "source_unsupported"
+      ],
+      "required_rule_flags": [
+        "contradiction_or_no_support"
+      ],
+      "acceptable_rationale_elements": [
+        "no measured difference"
+      ],
+      "prohibited_inventions_or_upgrades": [
+        "improvement",
+        "causal benefit"
+      ],
+      "human_review_required": true
+    },
+    {
+      "fixture_id": "fixture_correlation_as_causation",
+      "claim_id": "claim_causation",
+      "expected_verdict": "overstated",
+      "required_evidence_ids": [
+        "source_correlation"
+      ],
+      "required_rule_flags": [
+        "causal_overreach"
+      ],
+      "acceptable_rationale_elements": [
+        "association",
+        "self-selection",
+        "no causal inference"
+      ],
+      "prohibited_inventions_or_upgrades": [
+        "causal effect",
+        "supported verdict"
+      ],
+      "human_review_required": true
+    },
+    {
+      "fixture_id": "fixture_omitted_limitations",
+      "claim_id": "claim_omitted_limits",
+      "expected_verdict": "overstated",
+      "required_evidence_ids": [
+        "source_scope"
+      ],
+      "required_rule_flags": [
+        "scope_generalization",
+        "certainty_magnitude_overreach"
+      ],
+      "acceptable_rationale_elements": [
+        "12 volunteers",
+        "one class",
+        "four weeks",
+        "no follow-up"
+      ],
+      "prohibited_inventions_or_upgrades": [
+        "all learners",
+        "permanent effect"
+      ],
+      "human_review_required": true
+    },
+    {
+      "fixture_id": "fixture_unverifiable_missing_context",
+      "claim_id": "claim_missing_context",
+      "expected_verdict": "unverifiable",
+      "required_evidence_ids": [
+        "source_missing_context"
+      ],
+      "required_rule_flags": [
+        "missing_required_context"
+      ],
+      "acceptable_rationale_elements": [
+        "outcome context missing",
+        "duration missing"
+      ],
+      "prohibited_inventions_or_upgrades": [
+        "sustained outcome",
+        "supported verdict"
+      ],
+      "human_review_required": true
+    },
+    {
+      "fixture_id": "fixture_conflicting_evidence",
+      "claim_id": "claim_conflict",
+      "expected_verdict": "unverifiable",
+      "required_evidence_ids": [
+        "source_conflict_a",
+        "source_conflict_b"
+      ],
+      "required_rule_flags": [
+        "ambiguity_or_conflict"
+      ],
+      "acceptable_rationale_elements": [
+        "conflicting counts",
+        "discrepancy unresolved"
+      ],
+      "prohibited_inventions_or_upgrades": [
+        "averaged preference",
+        "majority conclusion"
+      ],
+      "human_review_required": true
+    }
+  ]
+}

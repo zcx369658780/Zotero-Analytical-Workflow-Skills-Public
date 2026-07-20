@@ -1,0 +1,177 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/scholartrace/scholartrace_analysis_proposal.schema.json",
+  "title": "ScholarTrace Analysis Proposal",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "case_id",
+    "proposals"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "case_id": {
+      "$ref": "#/$defs/stableId"
+    },
+    "proposals": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/proposal"
+      }
+    }
+  },
+  "$defs": {
+    "stableId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{2,63}$"
+    },
+    "verdict": {
+      "enum": [
+        "supported",
+        "partially_supported",
+        "unsupported",
+        "overstated",
+        "unverifiable"
+      ]
+    },
+    "component": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "component_id",
+        "text",
+        "support_status"
+      ],
+      "properties": {
+        "component_id": {
+          "$ref": "#/$defs/stableId"
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1
+        },
+        "support_status": {
+          "enum": [
+            "supported",
+            "unsupported",
+            "unknown"
+          ]
+        }
+      }
+    },
+    "factFlags": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "causal_overreach",
+        "scope_generalization",
+        "certainty_magnitude_overreach",
+        "contradiction_or_no_support",
+        "separable_partial_support",
+        "ambiguity_or_conflict",
+        "missing_required_context",
+        "all_material_components_supported",
+        "all_material_qualifiers_supported"
+      ],
+      "properties": {
+        "causal_overreach": {
+          "type": "boolean"
+        },
+        "scope_generalization": {
+          "type": "boolean"
+        },
+        "certainty_magnitude_overreach": {
+          "type": "boolean"
+        },
+        "contradiction_or_no_support": {
+          "type": "boolean"
+        },
+        "separable_partial_support": {
+          "type": "boolean"
+        },
+        "ambiguity_or_conflict": {
+          "type": "boolean"
+        },
+        "missing_required_context": {
+          "type": "boolean"
+        },
+        "all_material_components_supported": {
+          "type": "boolean"
+        },
+        "all_material_qualifiers_supported": {
+          "type": "boolean"
+        }
+      }
+    },
+    "proposal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "claim_id",
+        "cited_source_ids",
+        "evidence_status",
+        "material_components",
+        "missing_or_altered_qualifiers",
+        "fact_flags",
+        "rationale_candidate",
+        "unresolved_questions"
+      ],
+      "properties": {
+        "claim_id": {
+          "$ref": "#/$defs/stableId"
+        },
+        "cited_source_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/stableId"
+          }
+        },
+        "evidence_status": {
+          "enum": [
+            "full_support",
+            "mixed_support",
+            "no_support",
+            "conflicting",
+            "insufficient_context"
+          ]
+        },
+        "material_components": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/component"
+          }
+        },
+        "missing_or_altered_qualifiers": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "fact_flags": {
+          "$ref": "#/$defs/factFlags"
+        },
+        "rationale_candidate": {
+          "type": "string",
+          "minLength": 1
+        },
+        "unresolved_questions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "suggested_final_verdict": {
+          "$ref": "#/$defs/verdict"
+        }
+      }
+    }
+  }
+}
