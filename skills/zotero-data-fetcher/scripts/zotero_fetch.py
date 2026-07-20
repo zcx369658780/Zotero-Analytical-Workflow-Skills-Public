@@ -20,6 +20,12 @@ from pathlib import Path
 from typing import Any
 
 
+THIS_DIR = Path(__file__).resolve().parent
+sys.path.insert(0, str(THIS_DIR))
+
+import metadata_client as _metadata  # noqa: E402
+
+
 DEFAULT_API = "http://localhost:23119/api"
 DEFAULT_USER_AGENT = "ZoteroAnalyticalWorkflow/0.1 (mailto:research-workflow@example.invalid)"
 
@@ -306,234 +312,67 @@ def item_data(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def clean_doi(value: str | None) -> str | None:
-    if not value:
-        return None
-    doi = value.strip()
-    doi = re.sub(r"^https?://(dx\.)?doi\.org/", "", doi, flags=re.I)
-    doi = re.sub(r"^doi:\s*", "", doi, flags=re.I)
-    return doi.strip().rstrip(".") or None
+    return _metadata.clean_doi(value)
 
 
 def abstract_from_openalex(index: dict[str, list[int]] | None) -> str:
-    if not index:
-        return ""
-    words: list[tuple[int, str]] = []
-    for word, positions in index.items():
-        for position in positions:
-            words.append((position, word))
-    return " ".join(word for _, word in sorted(words))
+    return _metadata.abstract_from_openalex(index)
 
 
 def publication_year_from_crossref(message: dict[str, Any]) -> int | None:
-    for key in ("published-print", "published-online", "published", "issued"):
-        parts = ((message.get(key) or {}).get("date-parts") or [])
-        if parts and parts[0]:
-            return parts[0][0]
-    return None
+    return _metadata.publication_year_from_crossref(message)
 
 
 def title_from_crossref(message: dict[str, Any]) -> str:
-    titles = message.get("title") or []
-    return titles[0] if titles else ""
+    title = message.get("title")
+    value = title[0] if isinstance(title, list) and title else title
+    return _metadata.strip_markup(value)
 
 
 def first_container_title(message: dict[str, Any]) -> str:
-    titles = message.get("container-title") or []
-    return titles[0] if titles else ""
+    value = message.get("container-title")
+    first = value[0] if isinstance(value, list) and value else value
+    return _metadata.strip_markup(first)
 
 
 def normalize_title(value: str | None) -> str:
-    if not value:
-        return ""
-    value = re.sub(r"<[^>]+>", " ", value)
-    value = re.sub(r"[^a-z0-9]+", " ", value.lower())
-    return re.sub(r"\s+", " ", value).strip()
+    return _metadata.normalize_title(value)
 
 
 def title_similarity(left: str | None, right: str | None) -> float:
-    left_tokens = set(normalize_title(left).split())
-    right_tokens = set(normalize_title(right).split())
-    if not left_tokens or not right_tokens:
-        return 0.0
-    return len(left_tokens & right_tokens) / len(left_tokens | right_tokens)
+    return _metadata.title_similarity(left, right)
 
 
-def title_matches(expected: str | None, found: str | None, threshold: float = 0.5) -> bool:
-    if not expected or not found:
-        return True
-    expected_norm = normalize_title(expected)
-    found_norm = normalize_title(found)
-    return (
-        expected_norm in found_norm
-        or found_norm in expected_norm
-        or title_similarity(expected, found) >= threshold
-    )
+def title_matches(
+    expected: str | None,
+    found: str | None,
+    threshold: float = 0.5,
+) -> bool:
+    return _metadata.title_matches(expected, found, threshold)
 
 
 def collect_oa_locations(payload: dict[str, Any]) -> list[dict[str, str]]:
-    locations: list[dict[str, str]] = []
-
-    unpaywall = payload.get("unpaywall") or {}
-    for raw in [unpaywall.get("best_oa_location")] + (unpaywall.get("oa_locations") or []):
-        if not raw:
-            continue
-        pdf_url = raw.get("url_for_pdf")
-        landing_url = raw.get("url")
-        if pdf_url or landing_url:
-            locations.append(
-                {
-                    "source": "unpaywall",
-                    "pdf_url": pdf_url or "",
-                    "landing_page_url": landing_url or "",
-                    "license": raw.get("license") or "",
-                    "host_type": raw.get("host_type") or "",
-                }
-            )
-
-    openalex = payload.get("openalex") or {}
-    for raw in [openalex.get("primary_location")] + (openalex.get("locations") or []):
-        if not raw:
-            continue
-        pdf_url = raw.get("pdf_url")
-        landing_url = raw.get("landing_page_url")
-        if pdf_url or landing_url:
-            locations.append(
-                {
-                    "source": "openalex",
-                    "pdf_url": pdf_url or "",
-                    "landing_page_url": landing_url or "",
-                    "license": raw.get("license") or "",
-                    "host_type": "oa" if raw.get("is_oa") else "",
-                }
-            )
-    deduped: list[dict[str, str]] = []
-    seen: set[tuple[str, str]] = set()
-    for location in locations:
-        marker = (location.get("pdf_url", ""), location.get("landing_page_url", ""))
-        if marker in seen:
-            continue
-        seen.add(marker)
-        deduped.append(location)
-    return deduped
+    return _metadata.collect_oa_locations(payload)
 
 
 def crossref_lookup(doi: str | None, email: str | None) -> dict[str, Any] | None:
-    if not doi:
-        return None
-    encoded = urllib.parse.quote(doi, safe="")
-    url = f"https://api.crossref.org/works/{encoded}"
-    if email:
-        url += f"?mailto={urllib.parse.quote(email)}"
-    try:
-        payload = http_json(url)
-    except Exception:
-        return None
-    message = payload.get("message") if isinstance(payload, dict) else None
-    if not isinstance(message, dict):
-        return None
-    return {
-        "DOI": message.get("DOI") or doi,
-        "title": title_from_crossref(message),
-        "container_title": first_container_title(message),
-        "publisher": message.get("publisher") or "",
-        "type": message.get("type") or "",
-        "published_year": publication_year_from_crossref(message),
-        "abstract": re.sub(r"<[^>]+>", "", message.get("abstract") or "").strip(),
-        "url": message.get("URL") or "",
-    }
+    return _metadata.crossref_lookup(doi, email, http_json)
 
 
 def crossref_title_search(title: str | None, email: str | None) -> dict[str, Any] | None:
-    if not title:
-        return None
-    params = {"query.title": title, "rows": "1"}
-    if email:
-        params["mailto"] = email
-    url = "https://api.crossref.org/works?" + urllib.parse.urlencode(params)
-    try:
-        payload = http_json(url)
-    except Exception:
-        return None
-    items = ((payload.get("message") or {}).get("items") or []) if isinstance(payload, dict) else []
-    if not items:
-        return None
-    message = items[0]
-    result = {
-        "DOI": message.get("DOI") or "",
-        "title": title_from_crossref(message),
-        "container_title": first_container_title(message),
-        "publisher": message.get("publisher") or "",
-        "type": message.get("type") or "",
-        "published_year": publication_year_from_crossref(message),
-        "abstract": re.sub(r"<[^>]+>", "", message.get("abstract") or "").strip(),
-        "url": message.get("URL") or "",
-        "match_score": title_similarity(title, title_from_crossref(message)),
-    }
-    return result if title_matches(title, result["title"]) else None
+    return _metadata.crossref_title_search(title, email, http_json)
 
 
-def openalex_lookup(doi: str | None, title: str | None, email: str | None) -> dict[str, Any] | None:
-    params = {}
-    if email:
-        params["mailto"] = email
-    if doi:
-        doi_url = "https://doi.org/" + doi
-        encoded_id = urllib.parse.quote(doi_url, safe=":/")
-        url = f"https://api.openalex.org/works/{encoded_id}"
-        if params:
-            url += "?" + urllib.parse.urlencode(params)
-    elif title:
-        params["search"] = title
-        params["per-page"] = "1"
-        url = "https://api.openalex.org/works?" + urllib.parse.urlencode(params)
-    else:
-        return None
-    try:
-        payload = http_json(url)
-    except Exception:
-        return None
-    if "results" in payload:
-        results = payload.get("results") or []
-        if not results:
-            return None
-        payload = results[0]
-    if not isinstance(payload, dict):
-        return None
-    return {
-        "id": payload.get("id") or "",
-        "doi": payload.get("doi") or "",
-        "title": payload.get("title") or "",
-        "publication_year": payload.get("publication_year"),
-        "type": payload.get("type") or "",
-        "is_oa": payload.get("open_access", {}).get("is_oa"),
-        "oa_status": payload.get("open_access", {}).get("oa_status") or "",
-        "abstract": abstract_from_openalex(payload.get("abstract_inverted_index")),
-        "primary_location": payload.get("primary_location"),
-        "locations": payload.get("locations") or [],
-    }
+def openalex_lookup(
+    doi: str | None,
+    title: str | None,
+    email: str | None,
+) -> dict[str, Any] | None:
+    return _metadata.openalex_lookup(doi, title, email, http_json)
 
 
 def unpaywall_lookup(doi: str | None, email: str | None) -> dict[str, Any] | None:
-    if not doi or not email:
-        return None
-    encoded = urllib.parse.quote(doi, safe="")
-    url = f"https://api.unpaywall.org/v2/{encoded}?email={urllib.parse.quote(email)}"
-    try:
-        payload = http_json(url)
-    except Exception:
-        return None
-    if not isinstance(payload, dict):
-        return None
-    return {
-        "doi": payload.get("doi") or doi,
-        "doi_url": payload.get("doi_url") or "",
-        "title": payload.get("title") or "",
-        "year": payload.get("year"),
-        "is_oa": payload.get("is_oa"),
-        "oa_status": payload.get("oa_status") or "",
-        "best_oa_location": payload.get("best_oa_location"),
-        "oa_locations": payload.get("oa_locations") or [],
-    }
+    return _metadata.unpaywall_lookup(doi, email, http_json)
 
 
 def add_online_supplements(
@@ -543,24 +382,32 @@ def add_online_supplements(
 ) -> dict[str, Any]:
     data = item_data(payload)
     doi = clean_doi(data.get("DOI") or data.get("doi"))
-    title = data.get("title") or data.get("shortTitle")
+    title = str(data.get("title") or "").strip()
     warnings: list[str] = []
-    crossref = crossref_lookup(doi, email)
-    doi_title_ok = title_matches(title, (crossref or {}).get("title"))
-    if crossref and not doi_title_ok:
-        warnings.append(
-            "DOI title mismatch between Zotero metadata and Crossref; DOI-based online metadata was not trusted."
-        )
-        crossref = crossref_title_search(title, email)
 
-    openalex = openalex_lookup(doi if doi_title_ok else None, title, email)
-    if openalex and not title_matches(title, openalex.get("title")):
-        warnings.append(
-            "OpenAlex title mismatch; falling back to title search or metadata-only output."
-        )
-        openalex = openalex_lookup(None, title, email)
-        if openalex and not title_matches(title, openalex.get("title")):
+    crossref = crossref_lookup(doi, email) if doi else crossref_title_search(title, email)
+    if crossref and title and not title_matches(title, crossref.get("title")):
+        warnings.append("Crossref DOI result title mismatch; result rejected.")
+        crossref = crossref_title_search(title, email)
+    if crossref and title and not title_matches(title, crossref.get("title")):
+        warnings.append("Crossref title-search result did not validate; result rejected.")
+        crossref = None
+
+    openalex = openalex_lookup(doi, title or None, email)
+    if openalex and title and not title_matches(title, openalex.get("title")):
+        warnings.append("OpenAlex result title mismatch; result rejected.")
+        if doi:
+            retry = openalex_lookup(None, title, email)
+            openalex = retry if retry and title_matches(title, retry.get("title")) else None
+        else:
             openalex = None
+
+    unpaywall = None
+    if doi and email and not skip_unpaywall:
+        unpaywall = unpaywall_lookup(doi, email)
+        if unpaywall and title and not title_matches(title, unpaywall.get("title")):
+            warnings.append("Unpaywall result title mismatch; result rejected.")
+            unpaywall = None
 
     supplements: dict[str, Any] = {
         "doi": doi,
@@ -568,9 +415,8 @@ def add_online_supplements(
         "warnings": warnings,
         "crossref": crossref,
         "openalex": openalex,
-        "unpaywall": None
-        if (skip_unpaywall or not doi_title_ok)
-        else unpaywall_lookup(doi, email),
+        "unpaywall": unpaywall,
+        "oa_locations": [],
     }
     supplements["oa_locations"] = collect_oa_locations(supplements)
     payload["online_supplements"] = supplements

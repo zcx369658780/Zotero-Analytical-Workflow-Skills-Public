@@ -33,6 +33,12 @@ from zotero_fetch import (  # noqa: E402
     fetch_from_sqlite,
 )
 from safety_io import guarded_append_line, guarded_write_text  # noqa: E402
+from classification import (  # noqa: E402
+    classify_core_variable,
+    classify_methodology,
+    classify_theme,
+)
+from template_renderer import discover_template, render_note  # noqa: E402
 
 
 NOISE_RE = re.compile(
@@ -125,52 +131,15 @@ def year_from_date(value: str | None) -> str:
 
 
 def infer_theme(title: str) -> str:
-    lower = title.lower()
-    if "hank" in lower:
-        return "异质主体宏观模型与政策传导"
-    if "migration" in lower or "commuting" in lower:
-        return "人口迁移与空间劳动力配置"
-    if "housing" in lower:
-        return "住房约束与空间资源错配"
-    if "spatial" in lower or "geography" in lower:
-        return "空间结构与宏观经济政策"
-    if "monetary" in lower:
-        return "货币政策传导与区域异质性"
-    if "climate" in lower:
-        return "气候冲击与宏观经济"
-    return "空间宏观经济与异质性分析"
+    return classify_theme(title)
 
 
 def infer_methodology(title: str, abstract: str, fulltext: str) -> str:
-    haystack = " ".join([title, abstract, fulltext[:8000]]).lower()
-    if "gravity" in haystack:
-        return "引力模型与迁移流估计"
-    if "hank" in haystack:
-        return "HANK模型与政策冲击分析"
-    if "dynamic spatial" in haystack or "spatial general equilibrium" in haystack:
-        return "动态空间一般均衡模型"
-    if "deep learning" in haystack or "neural" in haystack:
-        return "深度学习近似动态规划"
-    if "difference-in-differences" in haystack or "instrument" in haystack:
-        return "准实验识别与计量估计"
-    if "model" in haystack:
-        return "结构模型与数值模拟"
-    return "文献综述或理论分析"
+    return classify_methodology(title, abstract, fulltext)
 
 
 def infer_core_variable(title: str, abstract: str) -> str:
-    haystack = " ".join([title, abstract]).lower()
-    if "migration" in haystack:
-        return "迁移流、城市便利性和就业机会"
-    if "commuting" in haystack:
-        return "通勤联系、本地就业弹性和福利"
-    if "housing" in haystack:
-        return "住房供给、价格约束和就业增长"
-    if "monetary" in haystack:
-        return "货币政策冲击、收入分布和消费响应"
-    if "hank" in haystack:
-        return "家庭异质性、资产分布和政策传导"
-    return "空间分布、异质性和政策响应"
+    return classify_core_variable(title, abstract)
 
 
 def quality_label(level: str) -> str:
@@ -353,53 +322,58 @@ def frontmatter_lines(
 
 
 def make_note(payload: dict[str, Any], collection: str) -> str:
-    item = payload["item"]
-    data = item.get("data") or {}
-    title = html.unescape(data.get("title") or "Untitled")
-    item_key = item.get("key") or ""
+    item = payload.get("item")
+    if not isinstance(item, dict):
+        raise ValueError("payload.item must be a mapping")
+    nested_data = item.get("data")
+    data = nested_data if isinstance(nested_data, dict) else item
     attachments = payload.get("attachments") or []
+    if not isinstance(attachments, list):
+        raise ValueError("payload.attachments must be a list")
+
+    title = html.unescape(str(data.get("title") or "Untitled")).strip() or "Untitled"
+    item_key = str(item.get("key") or "")
     pdf_key = best_pdf_key(attachments)
+    pdf_uri = first_pdf_page_link(pdf_key)
     online = payload.get("online_supplements") or {}
     quality = payload.get("raw_data_quality") or assess_raw_data_quality(payload)
     abstract = best_abstract(data, online)
     fulltext = first_fulltext(attachments)
-    intro = find_section(fulltext, ["introduction"])
-    methods = find_section(
-        fulltext,
-        ["model", "method", "methods", "data", "empirical strategy", "quantitative model"],
-    )
-    conclusion = find_section(fulltext, ["conclusion", "concluding remarks", "discussion"])
-    evidence_source = conclusion or abstract or intro or fulltext
-    findings = first_useful_sentences(evidence_source, 3)
-    method_sentences = first_useful_sentences(methods or intro or abstract, 3)
-    date = datetime.now().strftime("%Y-%m-%d")
-    year = year_from_date(data.get("date")) or str(data.get("year") or "")
-    author_text = authors(data.get("creators") or [])
-    source = data.get("publicationTitle") or data.get("publisher") or data.get("libraryCatalog") or ""
     theme = infer_theme(title)
     methodology = infer_methodology(title, abstract, fulltext)
     core_variable = infer_core_variable(title, abstract)
-    key_finding = "；".join([clean_text(s)[:36] for s in findings[:2]]) or "需补充全文后确认核心结论"
-    if len(key_finding) > 70:
-        key_finding = key_finding[:70]
-    relevance = f"为{collection}主题文献整理提供参考"
-    data_source = "全文缓存与Zotero元数据" if fulltext else "Zotero元数据与公开摘要"
-    study_area = "论文研究对象或模型样本"
-    if any(k in title.lower() + " " + abstract.lower() for k in ["china", "chinese"]):
-        study_area = "中国城市或省际样本"
-    elif "united states" in (title.lower() + " " + abstract.lower()) or "u.s." in (
-        title.lower() + " " + abstract.lower()
-    ):
-        study_area = "美国地区或城市样本"
-    elif "model" in (title.lower() + " " + abstract.lower()) or "hank" in title.lower():
-        study_area = "理论模型或数值经济体"
+    profile = evidence_profile(quality)
 
-    pdf_uri = first_pdf_page_link(pdf_key, 1)
-    limitations = "本条为批量初录入笔记，关键公式、估计细节和页码证据需后续人工精读校验。"
-    follow_up_questions = ["该文如何处理空间结构、异质主体和一般均衡反馈之间的关系？"]
-    lines: list[str] = frontmatter_lines(
+    evidence_sentences = first_useful_sentences(abstract or fulltext, 1)
+    evidence_excerpt = evidence_sentences[0] if evidence_sentences else ""
+    if evidence_excerpt:
+        summary = f"> 自动初筛候选摘要：{evidence_excerpt}"
+        conclusion = "\n".join(
+            [
+                "自动提取仅形成待核验候选，不构成正式可引用结论。",
+                f"可追溯的文本片段为：{evidence_excerpt}",
+                "",
+                "该片段来自摘要或缓存文本，尚无稳定页码，需人工回到原文核验。",
+            ]
+        )
+        key_finding = "现有文本提供了待人工核验的候选发现。"
+    else:
+        summary = "> 当前仅有元数据，无法形成可靠的内容摘要。"
+        conclusion = "\n".join(
+            [
+                "证据不足，因此不生成发现。",
+                "当前没有可核验的摘要、注释或全文片段。",
+            ]
+        )
+        key_finding = "证据不足，未生成研究发现。"
+
+    source = str(data.get("publicationTitle") or data.get("publisher") or "")
+    author_text = authors(data.get("creators") or [])
+    year = year_from_date(data.get("date"))
+    limitations = "自动初筛未经人工核验，不得作为 E3 正式引用证据。"
+    frontmatter = frontmatter_lines(
         title=title,
-        date=date,
+        date=datetime.now().strftime("%Y-%m-%d"),
         source=source,
         author_text=author_text,
         year=year,
@@ -410,125 +384,58 @@ def make_note(payload: dict[str, Any], collection: str) -> str:
         pdf_uri=pdf_uri,
         collection=collection,
         quality=quality,
-        workflow_tags=["literature-note", "reading-note", "auto-imported"],
+        workflow_tags=["literature-note", "reading-note", "first-pass"],
         reading_stage="初录入",
         theme=theme,
-        study_area=study_area,
-        data_source=data_source,
+        study_area="论文界定的分析主体、地区或样本范围，待人工核验。",
+        data_source="当前可用元数据、摘要、Zotero 笔记或全文缓存。",
         methodology=methodology,
         core_variable=core_variable,
         key_finding=key_finding,
-        relevance=relevance,
+        relevance="用于文献索引、主题初筛和后续精读排队。",
         limitations=limitations,
-        follow_up_questions=follow_up_questions,
+        follow_up_questions=["需要核验原文方法、数据和结论的准确表述。"],
     )
-    lines.extend(
-        [
-            "",
-            f"# {title}",
-            "",
-            "## 基本信息",
-            "",
-            "| 项目 | 内容 |",
-            "| --- | --- |",
-            f"| 作者 | {author_text} |",
-            f"| 年份 | {year} |",
-            f"| 来源 | {source} |",
-            f"| 主题 | {theme} |",
-            f"| 语料等级 | {quality_label(quality.get('level', ''))} |",
-            f"| Zotero 条目 | {source_link(item_key)} |",
-            f"| PDF 链接 | {pdf_uri or '本地无PDF'} |",
-            f"| 证据等级 | {evidence_profile(quality)['evidence_level']} |",
-            f"| 引用资格 | {evidence_profile(quality)['citation_status']} |",
-            "",
-            "## 一句话摘要",
-            "",
-        ]
-    )
-    if abstract:
-        lines.append(f"> {clean_text(abstract)[:420]}")
-    else:
-        lines.append("> 当前仅有元数据，缺少摘要或全文，需补充材料后精读。")
 
-    lines.extend(
-        [
-            "",
-            "## 研究对象",
-            "",
-            f"- **研究对象**：{study_area}。",
-            f"- **核心问题**：{theme}。",
-            f"- **研究情境/范围**：{collection} 相关文献。",
-            "",
-            "## 研究方法",
-            "",
-            "### 方法概述",
-            "",
-            f"- **方法类型**：{methodology}。",
-            f"- **总体思路**：{method_sentences[0] if method_sentences else '待基于完整正文进一步提炼。'}",
-            f"- **为什么用这种方法**：{method_sentences[1] if len(method_sentences) > 1 else '用于处理空间异质性、主体异质性或政策传导问题。'}",
-            "",
-            "### 方法分析",
-            "",
-            f"- **分析单位**：{study_area}。",
-            f"- **关键变量/概念**：{core_variable}。",
-            "- **识别/推断逻辑**：根据当前语料提取，后续精读时需进一步核对模型设定、识别假设和稳健性。",
-            f"- **具体步骤**：{method_sentences[2] if len(method_sentences) > 2 else '自动录入阶段暂未完整解析所有步骤。'}",
-            f"- **方法优势**：适合纳入 {collection} 主题下比较相关理论、方法与经验证据。",
-            f"- **方法局限**：{limitations}",
-            "",
-            "## 数据来源",
-            "",
-            f"- **数据类型**：{data_source}。",
-            f"- **样本来源**：{study_area}。",
-            "- **时间范围**：自动录入阶段未稳定识别。",
-            "- **样本量/案例数**：自动录入阶段未稳定识别。",
-            f"- **数据局限**：语料等级为 {quality_label(quality.get('level', ''))}；若为摘要级或元数据级，不应用于强结论引用。",
-            "",
-            "## 研究结论",
-            "",
-        ]
-    )
-    if findings:
-        for idx, sentence in enumerate(findings, start=1):
-            lines.append(f"- **主要发现 {idx}**：{clean_text(sentence)[:260]}")
-            if pdf_key:
-                lines.append(f"- **原文依据 {idx}**：{first_pdf_page_link(pdf_key, 1)}")
-            else:
-                lines.append(f"- **原文依据 {idx}**：无本地 PDF；依据在线摘要或元数据，需补全文复核。")
-            lines.append("")
-    else:
-        lines.extend(
+    item_link = source_link(item_key) if item_key else ""
+    sections = {
+        "metadata": "\n\n".join(
             [
-                "- **主要发现 1**：当前语料不足，暂不生成实质性结论。",
-                "- **原文依据 1**：无可复核全文依据。",
-                "",
+                f"署名记录为 {author_text or '未提供'}，年代记录为 {year or '未提供'}，载体记录为 {source or '未提供'}。",
+                f"自动分类得到 {theme}。Zotero 入口为 {item_link or '未提供'}，PDF 入口为 {pdf_uri or '未提供'}。",
+                f"当前自动证据级别为 {profile['evidence_level']}，使用门槛为 {profile['citation_status']}。",
             ]
-        )
-
-    lines.extend(
-        [
-            "## 我的判断",
-            "",
-            f"- **最有启发的点**：{relevance}。",
-            f"- **可借鉴的方法**：{methodology}。",
-            "- **可继续追问的问题**：该文如何处理空间结构、异质主体和一般均衡反馈之间的关系？",
-            f"- **与我的研究关联**：可作为 {collection} 文献库的初筛条目，后续按研究重要性精读。",
-            "",
-            "## 自动录入状态",
-            "",
-            f"- **录入时间**：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
-            f"- **语料等级**：{quality_label(quality.get('level', ''))}",
-            f"- **全文缓存字符数**：{quality.get('fulltext_cache_chars', 0)}",
-            f"- **Zotero批注数**：{quality.get('annotations_count', 0)}",
-            f"- **Zotero笔记数**：{quality.get('notes_count', 0)}",
-            f"- **需要后续精读**：{'是' if quality.get('needs_fulltext_for_deep_reading') else '否'}",
-        ]
+        ),
+        "summary": summary,
+        "subject": (
+            "论文界定的主体或空间单元仍待全文核验。"
+            f"目前仅能识别出“{theme}”这一议题线索，无法确认精确适用范围。"
+        ),
+        "method": (
+            f"自动分类结果为 {methodology}。该结果依据标题和现有文本生成，"
+            f"尚未完成人工原文核验。{limitations}"
+        ),
+        "data": (
+            "材料形态、时间跨度和样本规模均待人工核验。现有元数据没有提供"
+            "可稳定核验的样本线索，因此不得据此推断精确样本。"
+        ),
+        "findings": conclusion,
+        "assessment": (
+            f"该记录目前是 {collection} 文献的初筛候选，可复用线索为 {methodology}。"
+            "其实际价值需要精读后判断，并应核查方法、样本和结论能否由原文直接支持。"
+        ),
+        "evidence_status": (
+            f"当前等级为 {profile['evidence_level']}，使用门槛为 {profile['citation_status']}。"
+            "材料可用于索引、初筛和精读排队；在人工确认完成前，不得用于正式引文、"
+            "精确页码或强结论。"
+        ),
+    }
+    return render_note(
+        template_path=discover_template(__file__),
+        frontmatter=frontmatter,
+        title=title,
+        sections=sections,
     )
-    warnings = (online.get("warnings") or []) if isinstance(online, dict) else []
-    if warnings:
-        lines.append(f"- **在线补抓警告**：{'；'.join(warnings)}")
-    return "\n".join(lines) + "\n"
-
 
 def append_log(log_file: Path, status: str, key: str, title: str, *, write: bool) -> dict[str, object]:
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")

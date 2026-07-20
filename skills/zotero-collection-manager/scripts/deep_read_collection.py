@@ -49,6 +49,7 @@ from zotero_fetch import (  # noqa: E402
     fetch_from_sqlite,
 )
 from safety_io import guarded_append_line, guarded_write_text  # noqa: E402
+from template_renderer import discover_template, render_note  # noqa: E402
 
 try:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -330,7 +331,7 @@ def chinese_topic(title: str, abstract: str, fulltext: str, collection: str = ""
     elif collection == "未归类":
         return (
             "未归类文献的主题初筛",
-            "论文自身定义的研究对象或应用场景",
+            "论文自身界定的分析主体或应用场景",
             infer_methodology(title, abstract, fulltext),
             infer_core_variable(title, abstract),
         )
@@ -460,99 +461,82 @@ def find_existing_note_by_key(target_dir: Path, key: str) -> Path | None:
 
 
 def make_deep_note(payload: dict[str, Any], collection: str) -> str:
-    item = payload["item"]
-    data = item.get("data") or {}
-    title = html.unescape(data.get("title") or "Untitled")
-    item_key = item.get("key") or ""
+    item = payload.get("item")
+    if not isinstance(item, dict):
+        raise ValueError("payload.item must be a mapping")
+    nested_data = item.get("data")
+    data = nested_data if isinstance(nested_data, dict) else item
     attachments = payload.get("attachments") or []
-    pdf_key = best_pdf_key(attachments)
-    fulltext, evidence_pdf_key, pdf_path = fulltext_from_payload(payload)
-    if evidence_pdf_key:
-        pdf_key = evidence_pdf_key
+    if not isinstance(attachments, list):
+        raise ValueError("payload.attachments must be a list")
+
+    title = html.unescape(str(data.get("title") or "Untitled")).strip() or "Untitled"
+    item_key = str(item.get("key") or "")
+    fulltext, evidence_pdf_key, _supplied_path = fulltext_from_payload(payload)
+    pdf_key = evidence_pdf_key or best_pdf_key(attachments)
+    pdf_uri = first_pdf_page_link(pdf_key)
+    online = payload.get("online_supplements") or {}
     quality = payload.get("raw_data_quality") or assess_raw_data_quality(payload)
-    abstract = best_abstract(data, payload.get("online_supplements") or {})
-    if not abstract:
-        abstract = section_text(split_sections(fulltext), ["abstract"])
-    sections = split_sections(fulltext)
-    intro = section_text(sections, ["introduction", "background", "literature review"], fulltext[:6000])
+    abstract = best_abstract(data, online)
+    theme, study_area, methodology, core_variable = chinese_topic(
+        title, abstract, fulltext, collection
+    )
+    profile = evidence_profile(quality)
+
+    parsed = split_sections(fulltext) if fulltext else {}
     method_text = section_text(
-        sections,
-        ["model", "theory", "empirical strategy", "estimation", "calibration", "quantitative model"],
-        intro,
+        parsed,
+        ["method", "model", "theory", "empirical strategy", "estimation", "calibration"],
+        fulltext,
     )
-    data_text = section_text(sections, ["data"], method_text)
+    data_text = section_text(parsed, ["data"], fulltext)
     result_text = section_text(
-        sections,
-        ["results", "counterfactual", "discussion", "conclusion", "concluding remarks"],
-        fulltext[-9000:],
+        parsed,
+        ["results", "discussion", "counterfactual", "conclusion", "concluding remarks"],
+        fulltext,
     )
-    conclusion_text = section_text(sections, ["conclusion", "concluding remarks"], result_text)
+    method_candidates = useful_sentences(method_text, METHOD_WORDS, 2)
+    data_candidates = useful_sentences(data_text, DATA_WORDS, 2)
+    findings = result_sentences(result_text, 2)
+    if not findings:
+        findings = useful_sentences(result_text, FINDING_WORDS, 2)
 
-    method_sentences = useful_sentences(method_text, METHOD_WORDS, 4)
-    data_sentences = useful_sentences(data_text, DATA_WORDS, 3)
-    finding_sentences = result_sentences(conclusion_text or result_text, 5)
-    if len(finding_sentences) < 3:
-        finding_sentences.extend(result_sentences(result_text + " " + intro, 5))
-        deduped = []
-        seen = set()
-        for sentence in finding_sentences:
-            marker = sentence[:80].lower()
-            if marker not in seen:
-                seen.add(marker)
-                deduped.append(sentence)
-        finding_sentences = deduped[:5]
+    finding = findings[0] if findings else ""
+    quote = quote_excerpt(finding, 35) if finding else ""
+    if finding:
+        key_finding = compact_field_from_finding(finding, title, theme)
+        evidence_line = (
+            f"[PDF 入口]({pdf_uri})；全文缓存未提供稳定页码，引用前必须人工定位。"
+            if pdf_uri
+            else "全文缓存未提供稳定页码或 PDF 入口，引用前必须人工定位。"
+        )
+        conclusion = "\n".join(
+            [
+                f"自动提取的候选表述为：{key_finding}",
+                f"可追溯的文本片段为：“{quote}”",
+                "",
+                f"证据限制：{evidence_line}",
+            ]
+        )
+    else:
+        key_finding = "全文提取不足，未生成强结论。"
+        conclusion = "\n".join(
+            [
+                "全文缓存未提供足以稳定识别的结论句。",
+                "当前没有可追溯片段，不得补写公式、样本、页码或结论。",
+            ]
+        )
 
-    theme, study_area, methodology, core_variable = chinese_topic(title, abstract, fulltext, collection)
-    context = collection_context(collection)
-    data_source = data_source_label(data_sentences, title, collection)
-    review_like = is_review_article(title, abstract, fulltext)
-    key_finding = (
-        compact_field_from_finding(finding_sentences[0], title, theme)
-        if finding_sentences
-        else "全文缓存未稳定识别结论，需人工复核"
-    )
-    relevance = context["relevance"]
+    method_summary = method_candidates[0] if method_candidates else "全文方法证据不足，需人工核验。"
+    data_summary = data_candidates[0] if data_candidates else "全文数据证据不足，需人工核验。"
+    source = str(data.get("publicationTitle") or data.get("publisher") or "")
     author_text = authors(data.get("creators") or [])
-    year = year_from_date(data.get("date")) or str(data.get("year") or "")
-    source = data.get("publicationTitle") or data.get("publisher") or data.get("libraryCatalog") or ""
-    date = datetime.now().strftime("%Y-%m-%d")
-    deep_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    pdf_link = first_pdf_page_link(pdf_key, 1) or "本地无PDF"
-
-    intro_context = (
-        context["intro"]
-        if not intro or review_like
-        else quote_excerpt(intro, 24)
-    )
-    method_overview = f"以{methodology}为主线，将{core_variable}放入“{theme}”的框架中比较。"
-    method_reason = (
-        "综述类文章的目标是建立概念边界和文献谱系，而不是估计单一因果效应。"
-        if review_like
-        else context["reason"]
-    )
-    infer_logic = (
-        "通过归纳不同模型和应用场景，说明空间维度如何改变宏观经济推断。"
-        if review_like
-        else context["logic"]
-    )
-    concrete_steps = (
-        "先界定研究领域，再整理代表性模型与应用，最后提炼未来可扩展的问题。"
-        if review_like
-        else context["steps"]
-    )
-    data_sample = (
-        "文献与专题论文；无统一实证样本。"
-        if review_like
-        else f"{study_area}；具体样本边界需回到 PDF 数据段复核。"
-    )
-    data_period = "不适用，综述类文章无统一时间范围。" if review_like else "全文缓存未稳定识别，需要查阅正文数据段。"
-    data_n = "不适用，综述类文章无统一样本量。" if review_like else "全文缓存未稳定识别。"
-
-    limitations = "自动精读基于 Zotero 全文缓存，公式和页码没有逐页人工复核；关键估计设定仍需后续重点核对。"
-    follow_up_questions = [context["question"]]
-    lines: list[str] = frontmatter_lines(
+    year = year_from_date(data.get("date"))
+    context = collection_context(collection)
+    limitations = "自动精读仅形成 E2 候选证据；页码、公式、样本与结论均需人工核验。"
+    frontmatter = frontmatter_lines(
         title=title,
-        date=date,
+        date=datetime.now().strftime("%Y-%m-%d"),
         source=source,
         author_text=author_text,
         year=year,
@@ -560,124 +544,62 @@ def make_deep_note(payload: dict[str, Any], collection: str) -> str:
         data=data,
         item_key=item_key,
         pdf_key=pdf_key,
-        pdf_uri=first_pdf_page_link(pdf_key, 1),
+        pdf_uri=pdf_uri,
         collection=collection,
         quality=quality,
         workflow_tags=["literature-note", "reading-note", "deep-read"],
         reading_stage="二次精读",
         theme=theme,
         study_area=study_area,
-        data_source=data_source,
+        data_source=data_source_label(data_candidates, title, collection),
         methodology=methodology,
         core_variable=core_variable,
         key_finding=key_finding,
-        relevance=relevance,
+        relevance=context["relevance"],
         limitations=limitations,
-        follow_up_questions=follow_up_questions,
+        follow_up_questions=[context["question"]],
     )
-    lines.extend(
-        [
-        "",
-        f"# {title}",
-        "",
-        "## 基本信息",
-        "",
-        "| 项目 | 内容 |",
-        "| --- | --- |",
-        f"| 作者 | {author_text} |",
-        f"| 年份 | {year} |",
-        f"| 来源 | {source} |",
-        f"| 主题 | {theme} |",
-        f"| Zotero 条目 | {source_link(item_key)} |",
-        f"| PDF 链接 | {pdf_link} |",
-        f"| 证据等级 | {evidence_profile(quality)['evidence_level']} |",
-        f"| 引用资格 | {evidence_profile(quality)['citation_status']} |",
-        f"| 本地 PDF | {pdf_path or 'Zotero 已记录 PDF 附件；路径未解析'} |",
-        "",
-        "## 一句话摘要",
-        "",
-        f"> 本文围绕“{theme}”，使用{methodology}分析{study_area}中的{core_variable}，核心价值在于{relevance}。",
-        "",
-        "## 研究对象",
-        "",
-        f"- **研究对象**：{study_area}。",
-        f"- **核心问题**：{theme}。",
-        f"- **研究情境/范围**：{intro_context}",
-        "",
-        "## 研究方法",
-        "",
-        "### 方法概述",
-        "",
-        f"- **方法类型**：{methodology}。",
-        f"- **总体思路**：{method_overview}",
-        f"- **为什么用这种方法**：{method_reason}",
-        "",
-        "### 方法分析",
-        "",
-        f"- **分析单位**：{study_area}。",
-        f"- **关键变量/概念**：{core_variable}。",
-        f"- **识别/推断逻辑**：{infer_logic}",
-        f"- **具体步骤**：{concrete_steps}",
-        f"- **方法优势**：{context['advantage']}",
-        f"- **方法局限**：{limitations}",
-        "",
-        "## 数据来源",
-        "",
-        f"- **数据类型**：{data_source}。",
-        f"- **样本来源**：{data_sample}",
-        f"- **时间范围**：{data_period}",
-        f"- **样本量/案例数**：{data_n}",
-        "- **数据局限**：批量精读未进行表格逐项核对，涉及精确样本量、变量定义和清洗规则时需回到 PDF。",
-        "",
-        "## 研究结论",
-        "",
-        ]
-    )
-    if review_like:
-        lines.extend(
-            [
-                "- **主要发现 1**：该文主要贡献是界定空间宏观经济学问题域，而不是给出单一实证结论。",
-                f"- **原文引用 1**：缓存未提供稳定页码；{first_pdf_page_link(pdf_key, 1) or source_link(item_key)}",
-                "",
-            ]
-        )
-    elif finding_sentences:
-        for idx, sentence in enumerate(finding_sentences[:5], start=1):
-            summary = finding_summary(sentence, title, theme, idx)
-            lines.append(f"- **主要发现 {idx}**：{summary}")
-            lines.append(f"- **原文引用 {idx}**：缓存未提供稳定页码；{first_pdf_page_link(pdf_key, 1) or source_link(item_key)}")
-            lines.append(f"> “{quote_excerpt(sentence)}”")
-            lines.append("")
-    else:
-        lines.extend(
-            [
-                "- **主要发现 1**：全文缓存未稳定识别结论段，暂不生成实质性强结论。",
-                f"- **原文引用 1**：{first_pdf_page_link(pdf_key, 1) or source_link(item_key)}",
-                "",
-            ]
-        )
 
-    lines.extend(
-        [
-            "## 我的判断",
-            "",
-            f"- **最有启发的点**：{relevance}。",
-            f"- **可借鉴的方法**：{methodology}。",
-            f"- **可继续追问的问题**：{context['question']}",
-            f"- **与我的研究关联**：{context['relation']}",
-            "",
-            "## 二次精读状态",
-            "",
-            f"- **精读时间**：{deep_time}",
-            "- **证据来源**：Zotero 本地 PDF 全文缓存",
-            f"- **全文缓存字符数**：{quality.get('fulltext_cache_chars', 0)}",
-            f"- **Zotero批注数**：{quality.get('annotations_count', 0)}",
-            f"- **Zotero笔记数**：{quality.get('notes_count', 0)}",
-            "- **需要后续人工复核**：公式、表格、精确页码与变量定义",
-        ]
+    item_link = source_link(item_key) if item_key else ""
+    sections = {
+        "metadata": "\n\n".join(
+            [
+                f"署名记录为 {author_text or '未提供'}，年代记录为 {year or '未提供'}，载体记录为 {source or '未提供'}。",
+                f"自动分类得到 {theme}。Zotero 入口为 {item_link or '未提供'}，PDF 入口为 {pdf_uri or '未提供'}。",
+                f"当前自动证据级别为 {profile['evidence_level']}，使用门槛为 {profile['citation_status']}。",
+            ]
+        ),
+        "summary": f"自动精读形成候选：{key_finding} 该表述基于全文缓存，仍需人工回到 PDF 核验。",
+        "subject": (
+            f"当前识别的分析范围为 {study_area}，议题线索为“{theme}”。"
+            "这里只保留全文可支持的概括，不推断精确样本。"
+        ),
+        "method": (
+            f"自动分类结果为 {methodology}。缓存中的方法线索为：{method_summary} "
+            f"这些内容只形成候选概括。{limitations}"
+        ),
+        "data": (
+            f"材料形态暂记为 {data_source_label(data_candidates, title, collection)}。"
+            f"缓存提供的样本线索为：{data_summary} 时间跨度和样本规模未稳定提取，"
+            "不得从不完整缓存补写精确数字。"
+        ),
+        "findings": conclusion,
+        "assessment": (
+            f"当前价值线索为 {key_finding}，可复用线索为 {methodology}。"
+            f"后续需要核查：{context['question']} {context['relation']}"
+        ),
+        "evidence_status": (
+            f"当前等级为 {profile['evidence_level']}，使用门槛为 {profile['citation_status']}。"
+            "材料可进入文献图谱、机制候选和人工引文核验队列；未经 PDF 人工核验，"
+            "不得作为正式引用或精确页码依据。"
+        ),
+    }
+    return render_note(
+        template_path=discover_template(__file__),
+        frontmatter=frontmatter,
+        title=title,
+        sections=sections,
     )
-    return "\n".join(lines) + "\n"
-
 
 def append_log(log_file: Path, status: str, key: str, title: str, detail: str = "", *, write: bool = False) -> dict[str, object]:
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")

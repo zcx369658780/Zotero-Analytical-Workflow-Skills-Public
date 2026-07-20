@@ -1,29 +1,31 @@
 # Multi-Source Provenance Readiness Checkpoint
 
-Date: 2026-07-20
+Date: 2026-07-21
 
 ## Exact verdict
 
-`BLOCKED_BY_UNRESOLVED_MULTI_SOURCE_PROVENANCE`
+`OPENAI_BUILD_WEEK_2026_UNRESOLVED_SOURCE_DISCOVERY_AND_BLOCK_LEVEL_CLEAN_REWRITE_COMPLETE`
 
 ## Readiness checkpoint
 
-`BLOCKED_PENDING_ADDITIONAL_SOURCE_DISCOVERY`
+`READY_FOR_LOCAL_INSTALL_SYNC_AND_FINAL_PROVENANCE_GATE`
 
 ## Decision
 
-The source chain is actionable but incomplete:
+The prior unresolved source blockers have been removed through a separated independent rewrite:
 
 - existing permission safely covers the five fixed cheneternity counterparts;
-- fixed-template expression embedded in two Python files can be routed specifically to Eternity Chen if preservation is desired;
-- TP-006 and TP-008 cannot be assigned to Eternity Chen;
-- the online metadata block has plausible no-license source candidates but no defensible actual-source attribution;
-- no other author can be contacted until the affected block is tied to that author's repository with stronger evidence.
+- the two Python renderers no longer embed the authorized template's headings, prompts, table, or fallback expression;
+- MSB-010 is a behavior-preserving data-driven clean rewrite;
+- MSB-013 and MSB-017 use a neutral-ID, fail-closed runtime renderer;
+- MSB-026 uses a standard-library-only clean metadata client derived from official interface documentation;
+- final comparison against the old blocks and all 24 candidates found only generic/API/interface overlap;
+- all three authorized local daily-use files differ from the public rewrite, so a separate synchronization gate is required.
 
 Do not start submission materials or prepare any author request.
 
 ## Recommended next gate
 
-`OPENAI_BUILD_WEEK_2026_UNRESOLVED_SOURCE_DISCOVERY_AND_BLOCK_LEVEL_CLEAN_REWRITE_GATE`
+`OPENAI_BUILD_WEEK_2026_POST_REWRITE_LOCAL_SYNC_AND_FINAL_PROVENANCE_GATE`
 
-That gate should prioritize source recovery from user-controlled historical records if later authorized, then independently rewrite unresolved blocks where source ownership cannot be established. A separate, narrowly scoped Eternity template-embedding supplement may be considered only after unresolved blocks are isolated.
+That gate should synchronize the tested public rewrite and its three new helper modules into the authorized local daily-use installation, then confirm final public/local identity and provenance readiness. Do not begin it automatically.
