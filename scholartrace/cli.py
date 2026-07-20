@@ -4,8 +4,29 @@ import argparse
 import sys
 from pathlib import Path
 
+from .evaluation import (
+    LIVE_FILENAMES,
+    OutputCollisionError,
+    build_evaluation,
+    prepare_live_artifacts,
+    validate_new_output_directory,
+    write_live_artifacts,
+)
 from .policy import adjudicate
 from .provenance import verify_fixture_manifest
+from .providers.openai_responses import (
+    DEFAULT_MAX_OUTPUT_TOKENS,
+    DEFAULT_MODEL,
+    DEFAULT_REASONING_EFFORT,
+    MissingCredentialError,
+    MissingSDKError,
+    ModelAPIError,
+    ModelResponseError,
+    ProviderError,
+    UnsupportedModelError,
+    describe_request,
+    generate_proposal,
+)
 from .render import render_json, render_markdown
 from .validation import (
     ValidationError,
@@ -32,6 +53,35 @@ def _build_parser():
     audit.add_argument("--proposal", required=True)
     audit.add_argument("--write", action="store_true")
     audit.add_argument("--out-dir")
+
+    propose = subparsers.add_parser(
+        "propose", help="Run the bounded GPT-5.6 proposal and audit path."
+    )
+    propose.add_argument("--case", required=True)
+    propose.add_argument(
+        "--schema",
+        default="schemas/scholartrace_analysis_proposal.schema.json",
+    )
+    propose.add_argument(
+        "--gold",
+        default="examples/scholartrace/education_claim_audit_gold.json",
+    )
+    propose.add_argument("--model", default=DEFAULT_MODEL)
+    propose.add_argument(
+        "--reasoning-effort",
+        default=DEFAULT_REASONING_EFFORT,
+        choices=["none", "low", "medium", "high", "xhigh", "max"],
+    )
+    propose.add_argument(
+        "--max-output-tokens",
+        type=int,
+        default=DEFAULT_MAX_OUTPUT_TOKENS,
+    )
+    propose.add_argument("--attempt", type=int, default=1)
+    propose.add_argument("--dry-run", action="store_true")
+    propose.add_argument("--live", action="store_true")
+    propose.add_argument("--write", action="store_true")
+    propose.add_argument("--out-dir")
 
     verify = subparsers.add_parser(
         "verify-fixtures", help="Verify frozen synthetic fixture hashes."
@@ -109,6 +159,105 @@ def main(argv=None):
                     raise ValidationError("--out-dir requires --write")
                 sys.stdout.write(render_json(result))
             return 0
+        if args.command == "propose":
+            if args.dry_run == args.live:
+                raise ValidationError(
+                    "Choose exactly one of --dry-run or --live"
+                )
+            case_bundle = validate_case_bundle(load_json(args.case))
+            proposal_schema = load_json(args.schema)
+            gold = load_json(args.gold)
+            description = describe_request(
+                case_bundle,
+                proposal_schema,
+                model=args.model,
+                reasoning_effort=args.reasoning_effort,
+                max_output_tokens=args.max_output_tokens,
+            )
+            if args.dry_run:
+                sys.stdout.write(
+                    render_json(
+                        {
+                            **description,
+                            "dry_run": True,
+                            "api_called": False,
+                            "write_requested": args.write,
+                            "output_directory_supplied": bool(args.out_dir),
+                            "intended_files": list(LIVE_FILENAMES),
+                        }
+                    )
+                )
+                return 0
+            if not args.write or not args.out_dir:
+                raise ValidationError(
+                    "--live requires --write and --out-dir"
+                )
+            validate_new_output_directory(args.out_dir)
+            proposal, metadata = generate_proposal(
+                case_bundle,
+                proposal_schema,
+                model=args.model,
+                reasoning_effort=args.reasoning_effort,
+                max_output_tokens=args.max_output_tokens,
+                attempt_number=args.attempt,
+            )
+            result = adjudicate(case_bundle, proposal)
+            evaluation = build_evaluation(
+                case_bundle, proposal, result, gold
+            )
+            metadata["fixture_set_id"] = gold["fixture_set_id"]
+            metadata["fixture_file_sha256"] = (
+                verify_fixture_manifest(Path(args.case).parent)["hashes"][
+                    Path(args.case).name
+                ]
+            )
+            artifacts, finalized = prepare_live_artifacts(
+                proposal, result, metadata, evaluation
+            )
+            write_live_artifacts(args.out_dir, artifacts)
+            sys.stdout.write(
+                render_json(
+                    {
+                        "status": (
+                            "successful"
+                            if evaluation["successful"]
+                            else "failed_closed"
+                        ),
+                        "files": list(LIVE_FILENAMES),
+                        "model_requested": finalized["model_requested"],
+                        "model_returned": finalized["model_returned"],
+                        "attempt_number": finalized["attempt_number"],
+                        "gold_verdict_agreement": evaluation[
+                            "gold_verdict_agreement"
+                        ],
+                        "required_rule_agreement": evaluation[
+                            "required_rule_agreement"
+                        ],
+                    }
+                )
+            )
+            return 0 if evaluation["successful"] else 7
+    except MissingSDKError as exc:
+        sys.stderr.write(f"scholartrace: missing SDK: {exc}\n")
+        return 3
+    except MissingCredentialError as exc:
+        sys.stderr.write(f"scholartrace: missing credential: {exc}\n")
+        return 4
+    except ModelAPIError as exc:
+        sys.stderr.write(f"scholartrace: model API failure: {exc}\n")
+        return 5
+    except ModelResponseError as exc:
+        sys.stderr.write(f"scholartrace: model schema failure: {exc}\n")
+        return 6
+    except OutputCollisionError as exc:
+        sys.stderr.write(f"scholartrace: output collision: {exc}\n")
+        return 8
+    except UnsupportedModelError as exc:
+        sys.stderr.write(f"scholartrace: unsupported model: {exc}\n")
+        return 2
+    except ProviderError as exc:
+        sys.stderr.write(f"scholartrace: provider failure: {exc}\n")
+        return 5
     except ValidationError as exc:
         parser.exit(2, f"scholartrace: validation failed: {exc}\n")
     return 2

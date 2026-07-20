@@ -9,8 +9,11 @@ description = "Deterministic claim-evidence auditing for bounded synthetic educa
 requires-python = ">=3.11"
 dependencies = []
 
+[project.optional-dependencies]
+openai = ["openai>=2.43.0,<3"]
+
 [project.scripts]
 scholartrace = "scholartrace.cli:main"
 
 [tool.setuptools]
-packages = ["scholartrace"]
+packages = ["scholartrace", "scholartrace.providers"]

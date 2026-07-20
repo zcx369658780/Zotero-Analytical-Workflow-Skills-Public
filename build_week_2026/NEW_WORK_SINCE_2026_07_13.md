@@ -87,3 +87,24 @@ access external source content, or integrate with real Zotero or Obsidian data.
 
 GPT-5.6 integration, human review, public demonstration, release, deployment,
 and submission work remain outside this gate.
+
+## Bounded GPT-5.6 adapter gate
+
+The task-bearing commit
+`4ddd79484f73bfe32235b0a9e92fd39dd706ee20` authorized an optional,
+independently developed GPT-5.6 Responses API adapter around the accepted
+deterministic pipeline. This competition-period work adds:
+
+- a versioned semantic-proposal prompt contract;
+- an official-SDK provider boundary with no tools, fallback, or automatic
+  retries;
+- an explicit dry-run and live-only CLI path;
+- local schema, identifier, locator, gold, rule, and authority checks;
+- five-file no-overwrite evidence preparation;
+- fake-client provider tests that require no API credential; and
+- bounded integration usage and gate reporting.
+
+All offline tests passed. The only authorized credential source was absent or
+empty, so no live request occurred and no GPT-5.6 output is claimed. Live
+evaluation and demo productization remain blocked pending a narrow authorized
+access and evaluation remediation gate.
