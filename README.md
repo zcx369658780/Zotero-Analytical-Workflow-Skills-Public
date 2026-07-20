@@ -84,6 +84,22 @@ python skills/zotero-collection-manager/scripts/evidence_migration_planner.py --
 
 > 这是一个把个人 Zotero 文献库转换为结构化 Obsidian 文献笔记的 Codex skills 工作流。它将文献处理拆成取数、写作和批量调度三个 agent skill：先从本机 Zotero 服务或 SQLite 抽取元数据、批注和全文缓存，再按模板生成中文精读笔记，最后用队列脚本支持分类批处理、断点续跑、二次精读和 evidence schema 审计。公开版已移除个人路径、私有 vault、认证凭据和本地处理日志，所有写入脚本默认 dry-run，真实写入需要显式授权参数。
 
+## Upstream attribution and mixed licensing
+
+本项目改编并扩展了 [cheneternity/Zotero-Analytical-Workflow-Skills](https://github.com/cheneternity/Zotero-Analytical-Workflow-Skills)，上游作者为 Eternity Chen（GitHub [`cheneternity`](https://github.com/cheneternity)）。
+
+五个固定上游文件版本及其下游对应文件由 [`UPSTREAM_PERMISSION_FINAL.md`](UPSTREAM_PERMISSION_FINAL.md) 管辖。这五个完整的下游对应文件，包括 `README.md`、三个 `SKILL.md` 文件和 `templates/论文精读模板.md`，采用单独许可，不属于本仓库下游 MIT License 的许可范围。只有仓库所有者有权以 MIT 许可发布的独立下游原创内容，才可能适用 MIT License。
+
+有关来源、固定版本、文件映射和许可边界，请同时查阅：
+
+- [`UPSTREAM_PERMISSION_FINAL.md`](UPSTREAM_PERMISSION_FINAL.md)
+- [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md)
+- [`LICENSE_SCOPE.md`](LICENSE_SCOPE.md)
+- [`ACKNOWLEDGEMENTS.md`](ACKNOWLEDGEMENTS.md)
+- [`FILE_MAPPING_AND_HASH_MANIFEST.md`](FILE_MAPPING_AND_HASH_MANIFEST.md)
+
+公开访问本仓库并不意味着这些单独许可的上游衍生材料被许可为 MIT。
+
 ## 许可证
 
-MIT
+本仓库采用混合许可。根目录 `LICENSE` 中的 MIT License 仅适用于仓库所有者有权以 MIT 许可发布的独立下游原创内容；完整边界见 [`LICENSE_SCOPE.md`](LICENSE_SCOPE.md)。
