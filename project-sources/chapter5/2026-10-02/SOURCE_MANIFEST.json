@@ -1,0 +1,44 @@
+{
+  "date": "2026-10-02",
+  "purpose": "Owner-authorized source document upload for DOT migration preparation",
+  "source": "Owner manually downloaded ChatGPT project sources",
+  "files": [
+    {
+      "name": "CH5_DISSERTATION_CHAPTER5_REWRITE_CURRENT.md",
+      "bytes": 7329,
+      "sha256": "F9E0BF84344E7D75422C5A8C0337DAD553EBA8448AFE3F51364FEE393CA03438"
+    },
+    {
+      "name": "CH5_HISTORICAL_EVIDENCE_INDEX_20260927.md",
+      "bytes": 2473,
+      "sha256": "FD1538AEA8E345555577E5465645FA79AF7CD92BA058A99F156A6AC239A7CE85"
+    },
+    {
+      "name": "CH5_PROJECT_GOVERNANCE_CURRENT.md",
+      "bytes": 4726,
+      "sha256": "4A94AE3EE24265A745605BEED64FA00F9FEEEA8C8146AF2AFA5ABA17D3641FA7"
+    },
+    {
+      "name": "DISSERTATION_KNOWLEDGE_BASE_CURRENT.md",
+      "bytes": 5170,
+      "sha256": "93C6CA91A9918FF7CFBC8F951E16D4B92C485D917EBA02BB477EFE1FA201E88C"
+    },
+    {
+      "name": "PROJECT_SOURCES_REPLACEMENT_MANIFEST_20260927.md",
+      "bytes": 4978,
+      "sha256": "8EC2BAD84A583EE3D2BF92530ECB49A628FB4B22D76DDD6C96BFDB2DD3BDA469"
+    },
+    {
+      "name": "多省份HANK_matlab原版程序.zip",
+      "bytes": 1578316,
+      "sha256": "CEB94CCF34D2D218722B81E5111A8F4C530571A9F886BD4AFE0610A00321F755"
+    },
+    {
+      "name": "基于异质性新凯恩斯模型的中国经济区域均衡协调发展研究.pdf",
+      "bytes": 10879139,
+      "sha256": "CAA45F96A68BACA6A38299248652326AE11479795827FB06E83EF71272766122"
+    }
+  ],
+  "binary_archives": "preserved unmodified; not executed",
+  "scope": "7 source documents only; DOT import not performed"
+}
